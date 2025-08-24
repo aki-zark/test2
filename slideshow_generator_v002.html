@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スライドショー作成ツール</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      font-family: 'Courier New', Courier, monospace;
+      margin-bottom: 10px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: white;
+      background-color: #007bff;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #saveBtn {
+      background-color: #28a745;
+    }
+    #saveBtn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>スライドショー作成ツール</h1>
+
+  <p>画像ファイル名（0001.jpgなど）を1行に1つずつ入力してください。</p>
+  <textarea id="fileList" placeholder="例：&#10;0001.jpg&#10;0002.jpg&#10;0003.jpg"></textarea>
+  <button id="createBtn">作成</button>
+
+  <p>生成されたHTMLソースコード</p>
+  <textarea id="outputCode" readonly></textarea>
+  <button id="saveBtn">保存</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const fileListTextarea = document.getElementById('fileList');
+    const createBtn = document.getElementById('createBtn');
+    const outputCodeTextarea = document.getElementById('outputCode');
+    const saveBtn = document.getElementById('saveBtn');
+
+    let htmlTemplate = '';
+
+    // テンプレートファイルを読み込む
+    fetch('slideshow-v017-template.html')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('テンプレートファイルの読み込みに失敗しました。ファイルが同じフォルダにあるか確認してください。');
+            }
+            return response.text();
+        })
+        .then(template => {
+            htmlTemplate = template;
+            console.log('テンプレートファイルの読み込みに成功しました。');
+            createBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error(error);
+            alert(error.message);
+        });
+
+    createBtn.addEventListener('click', () => {
+        if (!htmlTemplate) {
+            alert('テンプレートファイルの読み込みが完了していません。');
+            return;
+        }
+
+        const fileNames = fileListTextarea.value.split('\n').filter(name => name.trim() !== '');
+        let slidesHtml = '';
+
+        fileNames.forEach((fileName, index) => {
+            const loadingAttribute = index === 0 ? '' : ' loading="lazy"';
+            slidesHtml += `  <div class="slide">
+    <img src="${fileName.trim()}" alt="Slide ${index + 1}"${loadingAttribute}>
+  </div>\n`;
+        });
+
+        const generatedHtml = htmlTemplate.replace('{{slides}}', slidesHtml);
+        outputCodeTextarea.value = generatedHtml;
+    });
+
+    saveBtn.addEventListener('click', () => {
+        const codeToSave = outputCodeTextarea.value;
+        if (!codeToSave) {
+            alert('最初に「作成」ボタンを押してHTMLを生成してください。');
+            return;
+        }
+
+        const blob = new Blob([codeToSave], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'slideshow-v017.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+});
+</script>
+
+</body>
+</html>
